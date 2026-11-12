@@ -290,7 +290,11 @@ def renderizar_indicados_adaptativo(filmes_do_ano, ano_atual):
 
 # ----------------- MENU PRINCIPAL -----------------
 if st.session_state.modo == "menu":
-    # 🌟 CSS com hover padrão/dourado geral e o hover VERDE específico para o st.link_button da aba 2
+    # Inicializa o controle do aviso caso ainda não exista
+    if "aviso_mata_mata" not in st.session_state:
+        st.session_state.aviso_mata_mata = None
+
+    # 🌟 CSS: botões principais em DOURADO e apenas o link do Cinema Nacional em VERDE
     st.markdown("""
     <style>
         div.stLinkButton > a {
@@ -300,17 +304,16 @@ if st.session_state.modo == "menu":
             text-align: center !important;
         }
 
-        /* 🌟 Efeito DOURADO nos botões principais e no link da aba 1 */
-        div.stButton > button:hover,
-        div.col1 div.stLinkButton > a:hover {
+        /* 🌟 Efeito DOURADO nos botões principais (CONTINUAR, NOVO JOGO, etc.) */
+        div.stButton > button:hover {
             background: linear-gradient(135deg, #5a472c, #3a2e1b) !important;
             color: #e5c158 !important;
             border-color: #e5c158 !important;
             transition: all 0.2s ease-in-out !important;
         }
 
-        /* 🌟 Efeito VERDE específico apenas no botão de alternar da aba 2 */
-        div.col2 div.stLinkButton > a:hover {
+        /* 🌟 Efeito VERDE somente no link do Cinema Nacional */
+        div.stLinkButton > a:hover {
             background-color: #008000 !important;
             color: white !important;
             border-color: #008000 !important;
@@ -322,21 +325,27 @@ if st.session_state.modo == "menu":
     # 🌟 TOPBAR COM OS DOIS BOTÕES DE NAVEGAÇÃO LADO A LADO COM A MESMA LARGURA
     col_aba1, col_aba2 = st.columns(2)
     with col_aba1:
-        # Link para voltar para a versão Oscar (com hover dourado)
-        st.link_button("🏆 VERSÃO OSCAR", "https://resta-um-oscar.streamlit.app/", use_container_width=True)
+        # Botão Ativo (Oscar) estilizado com destaque dourado
+        st.markdown("""
+        <div style="background: linear-gradient(135deg, #5a472c, #3a2e1b); color: #e5c158; padding: 0.55rem 1rem; border-radius: 6px; text-align: center; border: 2px solid #e5c158; font-weight: 700; font-size: 0.9rem; box-shadow: 0 4px 10px rgba(0,0,0,0.4);">
+            🏆 VERSÃO OSCAR <span style="font-size: 0.7rem; background: #e5c158; color: #000; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">ATIVO</span>
+        </div>
+        """, unsafe_allow_html=True)
     with col_aba2:
-        # Link para alternar para a versão nacional (com hover verde específico)
-        st.link_button("🇧🇷 VERSÃO CINEMA NACIONAL", "https://resta-um-oscar.streamlit.app/", use_container_width=True)
+        # Botão para alternar para a versão nacional (único que pega o hover verde)
+        st.link_button("🇧🇷 VERSÃO CINEMA NACIONAL", "https://resta-um-cinema-nacional.streamlit.app/", use_container_width=True)
     
-    st.markdown('<div class="site-title" style="margin-top: 20px;">CINEMA NACIONAL</div>', unsafe_allow_html=True)
+    st.markdown('<div class="site-title" style="margin-top: 20px;">FILMES DO OSCAR</div>', unsafe_allow_html=True)
     
     st.markdown('<div class="menu-container">', unsafe_allow_html=True)
     if len(st.session_state.filmes_salvos) > 0:
         if st.button("CONTINUAR"):
+            st.session_state.aviso_mata_mata = None
             st.session_state.modo = "jogo"
             st.rerun()
             
     if st.button("NOVO JOGO"):
+        st.session_state.aviso_mata_mata = None
         st.session_state.indice_ano = 0
         st.session_state.filmes_salvos = {}
         st.session_state.modo = "jogo"
@@ -345,18 +354,31 @@ if st.session_state.modo == "menu":
     if st.button("MATA-MATA"):
         qtd_salvos = len(st.session_state.filmes_salvos)
         if qtd_salvos >= 2:
+            st.session_state.aviso_mata_mata = None
             st.session_state.modo = "mata_mata_config"
             st.rerun()
         elif qtd_salvos == 1:
-            st.toast("Falta mais 1 filme salvo para começar o mata-mata!", icon="⚠️")
+            st.session_state.aviso_mata_mata = "Falta mais 1 filme salvo para começar o mata-mata!"
         else:
-            st.toast("Faltam 2 filmes salvos para começar o mata-mata!", icon="⚠️")
+            st.session_state.aviso_mata_mata = "Faltam 2 filmes salvos para começar o mata-mata!"
+
+    # Exibe o st.warning com botão de fechar (✕) ao lado
+    if st.session_state.aviso_mata_mata:
+        col_aviso, col_fechar = st.columns([9, 1])
+        with col_aviso:
+            st.warning(st.session_state.aviso_mata_mata)
+        with col_fechar:
+            if st.button("✕", key="fechar_aviso_mm"):
+                st.session_state.aviso_mata_mata = None
+                st.rerun()
             
     if st.button("PULAR PARA O ANO"):
+        st.session_state.aviso_mata_mata = None
         st.session_state.modo = "pular"
         st.rerun()
 
     if st.button("MINHA SELEÇÃO"):
+        st.session_state.aviso_mata_mata = None
         st.session_state.modo = "rankings"
         st.rerun()
         
@@ -541,7 +563,7 @@ elif st.session_state.modo == "mata_mata_arena":
             <div style="background: #000; border: 2px solid #5a472c; border-radius: 8px; padding: 4px; height: 380px; margin-bottom: 14px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
                 <img src="{img_c}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 6px;" onerror="this.src='https://via.placeholder.com/250x370/1a140e/e5c158?text={titulo_c.replace(' ', '+')}'">
             </div>
-            <div style="color: #ffffff; font-size: 1.25rem; font-weight: 700; line-height: 1.3; text-transform: uppercase; letter-spacing: 1px;">{titulo_c}</div>
+            <div style="color: #ffffff; font-size: 1.25rem; font-weight: 700; line-height: 1.3; text-transform: uppercase; letter-spacing: 1px;">{titulo_c}🏆</div>
         </div>
         """, unsafe_allow_html=True)
         
